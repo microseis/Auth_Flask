@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}Аккаунт пользователя{% endblock %}
+
+
+{% block content %}
+<h1>Добро пожаловать, {{ user }}!</h1>
+<a href="{{url_for('logout')}}">Нажмите здесь для выхода из аккаунта</a><br>
+{% endblock %}

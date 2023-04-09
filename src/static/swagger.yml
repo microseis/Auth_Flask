@@ -1,0 +1,221 @@
+openapi: 3.0.0
+info:
+  title: Roles API
+  version: 1.0.0
+servers:
+  - url: http://127.0.0.1:8000/
+    description: Dev server
+paths:
+  /users/{user_id}:
+    put:
+      summary: Метод обновления роли пользователя
+      tags:
+        - Users
+      operationId: updateUserRoleById
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          description: Идентификатор пользователя
+          schema:
+            type: string
+          example: 773cc503-802c-45c5-848c-76926c7a8314
+        - name: role_name
+          in: query
+          required: true
+          schema:
+            type: string
+          example: Subscriber
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Roles"
+        'default':
+          description: Все ошибки
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      summary: Метод удаления роли пользователя
+      tags:
+        - Users
+      operationId: deleteUserRoleById
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          description: Идентификатор пользователя
+          schema:
+            type: string
+          example: 773cc503-802c-45c5-848c-76926c7a8314
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Roles"
+        'default':
+          description: Все ошибки
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /roles:
+    get:
+      summary: Метод получения списка ролей
+      tags:
+        - Roles
+      operationId: getAllRoles
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Roles"
+        'default':
+          description: Все ошибки
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      summary: Метод создания роли
+      tags:
+        - Roles
+      operationId: createRole
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Role'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Role"
+        'default':
+          description: Все ошибки
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /roles/{role_id}:
+    get:
+      summary: Метод получения выбранной роли
+      tags:
+        - Roles
+      operationId: getRoleById
+      parameters:
+        - name: role_id
+          in: path
+          required: true
+          description: Идентификатор роли
+          schema:
+            type: string
+          example: 1
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Roles"
+        'default':
+          description: Все ошибки
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      summary: Метод удаления выбранной роли
+      tags:
+        - Roles
+      operationId: deleteRoleById
+      parameters:
+        - name: role_id
+          in: path
+          required: true
+          description: Идентификатор роли
+          schema:
+            type: string
+          example: 1
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Roles"
+        'default':
+          description: Все ошибки
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    put:
+      summary: Метод обновления выбранной роли
+      tags:
+        - Roles
+      operationId: updateRoleById
+      parameters:
+        - name: role_id
+          in: path
+          required: true
+          description: Идентификатор роли
+        - name: role_name
+          in: query
+          required: true
+          schema:
+            type: string
+          example: Subscriber
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Roles"
+        'default':
+          description: Все ошибки
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  schemas:
+    Role:
+      type: object
+      required:
+        - name
+        - id
+      properties:
+        id:
+          type: string
+          example: 1
+        name:
+          type: string
+          example: Admin
+
+    Roles:
+      type: array
+      items:
+      $ref: '#/components/schemas/Role'
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+        message:
+          type: string

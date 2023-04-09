@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}User Authentication{% endblock %}
+
+
+{% block content %}
+<p>User Authentication</p>
+<a href="{{url_for('login')}}">Войти</a><br>
+<a href="{{url_for('register')}}">Зарегистрироватья</a><br>
+{% endblock %}
