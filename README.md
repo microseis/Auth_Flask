@@ -25,3 +25,8 @@ Aleksei Stepanov: https://github.com/microseis
 ## API Spec
 http://127.0.0.1:8000/api/openapi
 
+## Create Superuser Console Command
+```commandline
+ python db_queries.py --username --userpassword
+```
+

@@ -6,6 +6,50 @@ servers:
   - url: http://127.0.0.1:8000/
     description: Dev server
 paths:
+  /api/register:
+    post:
+      summary: Метод создания пользователя
+      tags:
+        - User Auth
+      operationId: register_user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        'default':
+          description: Все ошибки
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/user_logout:
+    post:
+      summary: Метод разлогинивания пользователя
+      tags:
+        - User Auth
+      operationId: logoutUser
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        'default':
+          description: Все ошибки
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /users/{user_id}:
     put:
       summary: Метод обновления роли пользователя
@@ -219,3 +263,15 @@ components:
           type: integer
         message:
           type: string
+    User:
+      type: object
+      required:
+        - login
+        - password
+      properties:
+        login:
+          type: string
+          example: login
+        password:
+          type: string
+          example: thisismypassword

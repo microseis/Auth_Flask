@@ -3,6 +3,7 @@
 
 
 {% block content %}
-<h1>Добро пожаловать, {{ user }}!</h1>
+<h1>Добро пожаловать, {{ user.login }}!</h1>
+<p>Ваш логин: {{ user.login }}</p>
 <a href="{{url_for('logout')}}">Нажмите здесь для выхода из аккаунта</a><br>
 {% endblock %}

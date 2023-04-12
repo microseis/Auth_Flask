@@ -25,6 +25,7 @@ class Role(db.Model):
     __tablename__ = "roles"
     id = db.Column(db.Integer(), primary_key=True)
     name = db.Column(db.String(50), unique=True)
+    is_superuser = db.Column(db.Boolean, default=False, nullable=False)
 
 
 class UserRoles(db.Model):

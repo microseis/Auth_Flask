@@ -40,8 +40,7 @@ def login():
 @app.route("/dashboard", methods=["GET", "POST"])
 @login_required
 def dashboard():
-    this_user = current_user.login
-    return render_template("dashboard.html", user=this_user)
+    return render_template("dashboard.html", user=current_user)
 
 
 @app.route("/register", methods=["GET", "POST"])
@@ -60,7 +59,7 @@ def register():
     return render_template("register.html", form=form)
 
 
-@app.route("/roles")
+@app.route("/roles", methods=["GET"])
 def get_all_roles():
     roles = Role.query.all()
     output = []
@@ -95,7 +94,7 @@ def update_user_role_by_id(id: uuid):
         role_check = Role.query.filter_by(name=request.args.get("role_name")).first()
         print(role_check)
         if role_check:
-            print("Proposed role exists is database")
+            print("Proposed role exists in database")
             user_role.role_id = role_check.id
             db.session.commit()
             return {
@@ -106,11 +105,11 @@ def update_user_role_by_id(id: uuid):
         else:
             return {"error": "No such role"}
     else:
-        print("The user has not existing role")
+        print("The user has no existing role")
         role_check = Role.query.filter_by(name=request.args.get("role_name")).first()
 
         if role_check:
-            print("Proposed role exists is database")
+            print("Proposed role exists in database")
             new_user_role = UserRoles()
             new_user_role.role_id = role_check.id
             new_user_role.user_id = id
@@ -154,6 +153,25 @@ def delete_role(id: uuid) -> dict:
     db.session.delete(role)
     db.session.commit()
     return {"message": "Role deleted"}
+
+
+@app.route("/api/register", methods=["POST"])
+def registerUser():
+    data = request.get_json()
+    hashed_password = bcrypt.generate_password_hash(data.get("password")).decode(
+        "utf-8"
+    )
+    new_user = User(login=data.get("login"), password=hashed_password)
+    db.session.add(new_user)
+    db.session.commit()
+    return {"message": "User has been created"}
+
+
+@app.route("/api/user_logout", methods=["POST"])
+@login_required
+def logoutUser():
+    logout_user()
+    return {"message": "User has logged out"}
 
 
 @app.errorhandler(400)
