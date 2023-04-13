@@ -27,6 +27,6 @@ http://127.0.0.1:8000/api/openapi
 
 ## Create Superuser Console Command
 ```commandline
- python db_queries.py --username --userpassword
+ python src/create_db_tables.py --adminlogin --adminpassword
 ```
 

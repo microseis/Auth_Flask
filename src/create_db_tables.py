@@ -14,8 +14,8 @@ if not db.session.query(User).\
     filter(User.id ==UserRoles.user_id).\
     filter(Role.id == UserRoles.role_id).first() and len(sys.argv)==3:
     admin = User(
-        login=sys.argv[0],
-        password=bcrypt.generate_password_hash(sys.argv[1]).decode(
+        login=sys.argv[1],
+        password=bcrypt.generate_password_hash(sys.argv[2]).decode(
             "utf-8",
         ),
     )

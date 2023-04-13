@@ -5,7 +5,7 @@ from flask import (Response, jsonify, make_response, redirect, render_template,
 from flask_login import current_user, login_required, login_user, logout_user
 
 from db import db
-from db_models import Role, User, UserRoles
+from db_models import Role, User, UserRoles, UserHistory
 from forms import LoginForm, RegisterForm
 from main import app, bcrypt
 from helper import password_check, login_check
@@ -194,6 +194,9 @@ def loginUser():
         login_user(user)
         access_token = create_access_token(identity=user.id, fresh=True)
         refresh_token = create_refresh_token(user.id)
+        user_session = UserHistory(user_id=user.id)
+        db.session.add(user_session)
+        db.session.commit()
         return {"access_token": access_token, "refresh_token": refresh_token}, 200
 
     return {"code": 401,
