@@ -31,6 +31,31 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /api/login:
+    post:
+      summary: Метод залогинивания пользователя
+      tags:
+        - User Auth
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        'default':
+          description: Все ошибки
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /api/user_logout:
     post:
       summary: Метод разлогинивания пользователя

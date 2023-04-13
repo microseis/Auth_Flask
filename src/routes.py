@@ -1,7 +1,7 @@
 import uuid
 
 from flask import (Response, jsonify, make_response, redirect, render_template,
-                   request, url_for)
+                   request, url_for, abort)
 from flask_login import current_user, login_required, login_user, logout_user
 
 from db import db
@@ -9,6 +9,8 @@ from db_models import Role, User, UserRoles
 from forms import LoginForm, RegisterForm
 from main import app, bcrypt
 from helper import password_check, login_check
+from flask_jwt_extended import (
+    create_access_token, create_refresh_token, get_jwt_identity, get_jwt, jwt_required)
 
 
 @app.route("/", methods=["GET"])
@@ -179,6 +181,23 @@ def registerUser():
         return {"message": "User has been created"}
     else:
         return "Bad login", 400
+
+
+@app.route("/api/login", methods=["POST"])
+def loginUser():
+    data = request.get_json()
+    user = User.query.filter(
+        User.login == data.get('login')
+    ).first()
+
+    if bcrypt.check_password_hash(user.password, data.get('password')):
+        login_user(user)
+        access_token = create_access_token(identity=user.id, fresh=True)
+        refresh_token = create_refresh_token(user.id)
+        return {"access_token": access_token, "refresh_token": refresh_token}, 200
+
+    return {"code": 401,
+            "message": "Invalid credentials."}
 
 
 @app.route("/api/user_logout", methods=["POST"])

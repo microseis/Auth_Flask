@@ -1,5 +1,6 @@
 from flask import Flask
 from flask_bcrypt import Bcrypt
+from flask_jwt_extended import JWTManager
 from flask_login import LoginManager
 from flask_marshmallow import Marshmallow
 from flask_swagger_ui import get_swaggerui_blueprint
@@ -9,6 +10,7 @@ from db import init_db
 from db_models import User
 
 app = Flask(__name__)
+jwt = JWTManager(app)
 bcrypt = Bcrypt(app)
 app.config.from_object(ConfigFactory.factory())
 
