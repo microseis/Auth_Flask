@@ -8,6 +8,7 @@ from db import db
 from db_models import Role, User, UserRoles
 from forms import LoginForm, RegisterForm
 from main import app, bcrypt
+from helper import password_check, login_check
 
 
 @app.route("/", methods=["GET"])
@@ -158,13 +159,26 @@ def delete_role(id: uuid) -> dict:
 @app.route("/api/register", methods=["POST"])
 def registerUser():
     data = request.get_json()
-    hashed_password = bcrypt.generate_password_hash(data.get("password")).decode(
-        "utf-8"
-    )
-    new_user = User(login=data.get("login"), password=hashed_password)
-    db.session.add(new_user)
-    db.session.commit()
-    return {"message": "User has been created"}
+    existing_user = User.query.filter_by(login=data.get("login")).first()
+
+    if existing_user:
+        return "User already exists", 409
+
+    pass_chek = password_check(data.get("password"))
+    login_chek = login_check(data.get("login"))
+    if pass_chek.get('password_ok'):
+        hashed_password = bcrypt.generate_password_hash(data.get("password")).decode(
+            "utf-8"
+        )
+    else:
+        return "Bad password", 400
+    if login_chek.get('login_ok'):
+        new_user = User(login=data.get("login"), password=hashed_password)
+        db.session.add(new_user)
+        db.session.commit()
+        return {"message": "User has been created"}
+    else:
+        return "Bad login", 400
 
 
 @app.route("/api/user_logout", methods=["POST"])
