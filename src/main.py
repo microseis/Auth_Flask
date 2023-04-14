@@ -4,6 +4,7 @@ from flask_jwt_extended import JWTManager
 from flask_login import LoginManager
 from flask_marshmallow import Marshmallow
 from flask_swagger_ui import get_swaggerui_blueprint
+from flask_cors import CORS, cross_origin
 
 from config import ConfigFactory
 from db import init_db
@@ -12,6 +13,10 @@ from db_models import User
 app = Flask(__name__)
 jwt = JWTManager(app)
 bcrypt = Bcrypt(app)
+
+app = Flask(__name__)
+cors = CORS(app)
+app.config['CORS_HEADERS'] = 'Content-Type'
 app.config.from_object(ConfigFactory.factory())
 
 init_db(app)

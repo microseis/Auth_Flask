@@ -30,6 +30,7 @@ class Role(db.Model):
     id = db.Column(db.Integer(), primary_key=True)
     name = db.Column(db.String(50), unique=True)
     is_superuser = db.Column(db.Boolean, default=False, nullable=False)
+    is_privileged = db.Column(db.Boolean, default=False, nullable=False)
 
 
 class UserRoles(db.Model):

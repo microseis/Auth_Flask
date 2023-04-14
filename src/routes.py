@@ -2,6 +2,7 @@ import uuid
 
 from flask import (Response, jsonify, make_response, redirect, render_template,
                    request, url_for, abort)
+from flask_cors import cross_origin
 from flask_login import current_user, login_required, login_user, logout_user
 
 from db import db
@@ -11,7 +12,7 @@ from main import app, bcrypt
 from helper import password_check, login_check
 from flask_jwt_extended import (
     create_access_token, create_refresh_token, get_jwt_identity, get_jwt, jwt_required)
-
+from distutils.util import strtobool
 
 @app.route("/", methods=["GET"])
 def index():
@@ -63,31 +64,45 @@ def register():
 
 
 @app.route("/roles", methods=["GET"])
+@cross_origin()
 def get_all_roles():
     roles = Role.query.all()
     output = []
     for item in roles:
-        role_data = {"id": item.id, "name": item.name}
+        role_data = {"id": item.id,
+                     "name": item.name,
+                     "is_superuser": item.is_superuser,
+                     "is_privileged": item.is_privileged}
         output.append(role_data)
 
     return {"roles": output}
 
 
 @app.route("/roles/<id>", methods=["GET"])
+@cross_origin()
 def get_role_by_id(id: uuid):
     role = Role.query.get_or_404(id)
     return {"name": role.name, "id": role.id}
 
 
 @app.route("/roles/<id>", methods=["PUT"])
+@cross_origin()
 def update_role_by_id(id: uuid):
     role = Role.query.get_or_404(id)
     role.name = request.args.get("role_name")
+    role.is_privileged = strtobool(request.args.get("is_privileged").lower())
+    role.is_superuser = strtobool(request.args.get("is_superuser").lower())
     db.session.commit()
-    return {"name": role.name, "id": role.id}
+    return {
+        "name": role.name,
+        "id": role.id,
+        "is_privileged": role.is_privileged,
+        "is_superuser": role.is_superuser
+    }
 
 
 @app.route("/users/<id>", methods=["PUT"])
+@cross_origin()
 def update_user_role_by_id(id: uuid):
     print("Requested Role:", request.args.get("role_name"))
     user_role = UserRoles.query.filter_by(user_id=id).first()
@@ -127,6 +142,7 @@ def update_user_role_by_id(id: uuid):
 
 
 @app.route("/users/<id>", methods=["DELETE"])
+@cross_origin()
 def delete_user_role_by_id(id: uuid):
     user_role = UserRoles.query.filter_by(user_id=id).first()
     if user_role is not None:
@@ -138,9 +154,14 @@ def delete_user_role_by_id(id: uuid):
 
 
 @app.route("/roles", methods=["POST"])
+@cross_origin()
 def add_role() -> dict:
     if not Role.query.filter(Role.name == request.json["name"]).first():
-        role = Role(name=request.json["name"])
+        role = Role(
+            name=request.json["name"],
+            is_superuser=request.json["is_superuser"],
+            is_privileged=request.json["is_privileged"]
+        )
         db.session.add(role)
         db.session.commit()
         return {"id": role.id}
@@ -149,6 +170,7 @@ def add_role() -> dict:
 
 
 @app.route("/roles/<id>", methods=["DELETE"])
+@cross_origin()
 def delete_role(id: uuid) -> dict:
     role = Role.query.get(id)
     if role is None:
