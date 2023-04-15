@@ -5,62 +5,17 @@ from flask import (Response, jsonify, make_response, redirect, render_template,
 from flask_cors import cross_origin
 from flask_login import current_user, login_required, login_user, logout_user
 
-from db import db
+from db import db, redis_db
 from db_models import Role, User, UserRoles, UserHistory
 from forms import LoginForm, RegisterForm
 from main import app, bcrypt
 from helper import password_check, login_check
 from flask_jwt_extended import (
-    create_access_token, create_refresh_token, get_jwt_identity, get_jwt, jwt_required)
+    create_access_token, create_refresh_token, get_jwt_identity, get_jwt, jwt_required, JWTManager)
 from distutils.util import strtobool
 
-@app.route("/", methods=["GET"])
-def index():
-    return render_template("index.html")
 
-
-@app.route("/logout", methods=["GET", "POST"])
-@login_required
-def logout():
-    logout_user()
-    return redirect(url_for("login"))
-
-
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    if not current_user.is_authenticated:
-        form = LoginForm()
-        if form.validate_on_submit():
-            user = User.query.filter_by(login=form.username.data).first()
-            if user:
-                if bcrypt.check_password_hash(user.password, form.password.data):
-                    login_user(user)
-                    return redirect(url_for("dashboard"))
-        return render_template("login.html", form=form)
-    else:
-        return redirect("dashboard", code=303)
-
-
-@app.route("/dashboard", methods=["GET", "POST"])
-@login_required
-def dashboard():
-    return render_template("dashboard.html", user=current_user)
-
-
-@app.route("/register", methods=["GET", "POST"])
-def register():
-    form = RegisterForm()
-
-    if form.validate_on_submit():
-        hashed_password = bcrypt.generate_password_hash(form.password.data).decode(
-            "utf-8"
-        )
-        new_user = User(login=form.username.data, password=hashed_password)
-        db.session.add(new_user)
-        db.session.commit()
-        return redirect(url_for("login"))
-
-    return render_template("register.html", form=form)
+jwt = JWTManager(app)
 
 
 @app.route("/roles", methods=["GET"])
@@ -206,6 +161,7 @@ def registerUser():
 
 
 @app.route("/api/login", methods=["POST"])
+@cross_origin()
 def loginUser():
     data = request.get_json()
     user = User.query.filter(
@@ -218,11 +174,26 @@ def loginUser():
         refresh_token = create_refresh_token(user.id)
         user_session = UserHistory(user_id=user.id)
         db.session.add(user_session)
+        redis_db.set(name=str(user.id), value=refresh_token, ex=3600)
         db.session.commit()
         return {"access_token": access_token, "refresh_token": refresh_token}, 200
 
     return {"code": 401,
             "message": "Invalid credentials."}
+
+
+@app.route("/api/refresh", methods=["POST"])
+@login_required
+@cross_origin()
+@jwt_required(refresh=False)
+def refresh():
+    # We are using the `refresh=True` options in jwt_required to only allow
+    # refresh tokens to access this route.
+    identity = get_jwt_identity()
+    access_token = create_access_token(identity=identity)
+    refresh_token = create_refresh_token(identity)
+    redis_db.set(name=str(identity), value=refresh_token, ex=3600)
+    return make_response(jsonify(access_token=access_token), 200)
 
 
 @app.route("/api/user_logout", methods=["POST"])
@@ -254,3 +225,52 @@ def handle_404_error(_error) -> Response:
 def handle_500_error(_error) -> Response:
     """Return a http 500 error to client"""
     return make_response(jsonify({"error": "Server error"}), 500)
+
+
+@app.route("/", methods=["GET"])
+def index():
+    return render_template("index.html")
+
+
+@app.route("/logout", methods=["GET", "POST"])
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for("login"))
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if not current_user.is_authenticated:
+        form = LoginForm()
+        if form.validate_on_submit():
+            user = User.query.filter_by(login=form.username.data).first()
+            if user:
+                if bcrypt.check_password_hash(user.password, form.password.data):
+                    login_user(user)
+                    return redirect(url_for("dashboard"))
+        return render_template("login.html", form=form)
+    else:
+        return redirect("dashboard", code=303)
+
+
+@app.route("/dashboard", methods=["GET", "POST"])
+@login_required
+def dashboard():
+    return render_template("dashboard.html", user=current_user)
+
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    form = RegisterForm()
+
+    if form.validate_on_submit():
+        hashed_password = bcrypt.generate_password_hash(form.password.data).decode(
+            "utf-8"
+        )
+        new_user = User(login=form.username.data, password=hashed_password)
+        db.session.add(new_user)
+        db.session.commit()
+        return redirect(url_for("login"))
+
+    return render_template("register.html", form=form)

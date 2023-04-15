@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from flask import Flask
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager
@@ -11,12 +13,20 @@ from db import init_db
 from db_models import User
 
 app = Flask(__name__)
-jwt = JWTManager(app)
+
 bcrypt = Bcrypt(app)
 
 app = Flask(__name__)
 cors = CORS(app)
+
 app.config['CORS_HEADERS'] = 'Content-Type'
+app.config["JWT_COOKIE_SECURE"] = False
+app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
+app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=30)
+app.config['JWT_BLACKLIST_ENABLED'] = True
+app.config['JWT_BLACKLIST_TOKEN_CHECKS'] = ['access']
+
 app.config.from_object(ConfigFactory.factory())
 
 init_db(app)

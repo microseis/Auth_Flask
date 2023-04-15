@@ -6,6 +6,23 @@ servers:
   - url: http://127.0.0.1:8000/
     description: Dev server
 paths:
+  /api/refresh:
+    post:
+      summary: Обновление access и refresh токена
+      tags:
+        - User Auth
+      operationId: refresh
+      requestBody:
+        required: false
+      responses:
+        '200':
+          description: Success
+        'default':
+          description: Все ошибки
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /api/register:
     post:
       summary: Метод создания пользователя
