@@ -23,7 +23,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-  /api/register:
+  /api/v1/register:
     post:
       summary: Метод создания пользователя
       tags:

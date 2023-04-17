@@ -1,5 +1,5 @@
 import os
-
+from core.logger import logger
 from dotenv import load_dotenv
 
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -10,7 +10,7 @@ class ConfigFactory(object):
     @staticmethod
     def factory():
         env = os.environ.get("ENV", "development")
-        print("ENV settings are taken from:", env)
+        logger.info("ENV settings are taken from: %s", env)
         if env == "development":
             return Development()
         elif env == "docker":

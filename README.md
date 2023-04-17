@@ -19,8 +19,7 @@ April 7, 2023:
 - Add Open API Spec
 - Add `docker-compose.yml` for easy deployment on a server
 
-## Maintainers
-Julia Astankina: https://github.com/astankinajulia     
+## Maintainers 
 Aleksei Stepanov: https://github.com/microseis
 
 ## API Spec

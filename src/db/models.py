@@ -4,7 +4,7 @@ from datetime import datetime
 from flask_login import UserMixin
 from sqlalchemy.dialects.postgresql import UUID
 
-from db import db
+from src.db.db_init import db
 
 
 class User(db.Model, UserMixin):
