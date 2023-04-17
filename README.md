@@ -1,3 +1,4 @@
+
 # Flask User Authentication App
 
 ## Run
@@ -29,4 +30,3 @@ http://127.0.0.1:8000/api/openapi
 ```commandline
  python src/create_db_tables.py --adminlogin --adminpassword
 ```
-
