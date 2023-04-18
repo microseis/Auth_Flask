@@ -1,22 +1,19 @@
-import uuid
-from typing import Optional
-
 from flask import Flask
 from pydantic import BaseModel, Field
 
-from src.core.checker import bcrypt
-from src.core.logger import logger
-from src.db.db_init import db
-from src.db.models import Role, User, UserRoles
+from core.checker import bcrypt
+from core.logger import logger
+from db.db_init import db
+from db.models import Role, User, UserRoles
 
 
-def create_tables(app: Flask):
-    # Подготавливаем контекст и создаём таблицы
+def create_tables(app: Flask) -> None:
+    """Подготавливаем контекст и создаём таблицы."""
     app.app_context().push()
     db.create_all()
 
 
-def create_admin(admin_password):
+def create_admin(admin_password: str) -> None:
     """Создание админа."""
     if not (
         db.session.query(User)

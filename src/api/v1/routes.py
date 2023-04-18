@@ -4,14 +4,14 @@ from flask import Blueprint, abort, jsonify, make_response, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from spectree import Response
 
+from api import api
+from core.logger import logger
 from db.db_init import redis_db
-from src.api import api
-from src.core.logger import logger
-from src.db.helper import (AccessToken, LoginUser, RegisterUser, RolesData,
-                           UserTokens)
-from src.service.role_service import RoleService, get_role_service
-from src.service.user_service import (BadLoginError, UserExistsError,
-                                      UserService, get_user_service)
+from db.helper import (AccessToken, LoginUser, RegisterUser, RolesData,
+                       UserTokens)
+from service.role_service import RoleService, get_role_service
+from service.user_service import (BadLoginError, UserExistsError, UserService,
+                                  get_user_service)
 
 role_service: RoleService = get_role_service()
 user_service: UserService = get_user_service()

@@ -1,8 +1,8 @@
 version: "3.7"
 services:
 
-  app:
-    container_name: app
+  auth:
+    container_name: auth
     restart: unless-stopped
     image: app_image
     build:
@@ -11,8 +11,6 @@ services:
       - .env
     networks:
       - my_network
-    volumes:
-      - static_data:/opt/app/templates
     ports:
       - "8000:8000"
 
@@ -22,7 +20,7 @@ services:
     networks:
       - my_network
     depends_on:
-      - app
+      - auth
 
   nginx:
       restart: unless-stopped
@@ -36,11 +34,11 @@ services:
       networks:
         - my_network
       links:
-        - app
+        - auth
       environment:
         NGINX_SET_REAL_IPS_FROM: "[\"172.17.0.0/16\", \"192.168.0.10\"]"
       depends_on:
-        - app
+        - auth
         - redis
 
 
@@ -67,6 +65,3 @@ services:
 networks:
   my_network:
     driver: bridge
-
-volumes:
-  static_data:

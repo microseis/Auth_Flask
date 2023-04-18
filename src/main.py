@@ -4,11 +4,11 @@ import click
 from flask import Flask
 from flask_jwt_extended import JWTManager
 
-from src.api import api
-from src.api.v1.routes import auth_app
-from src.config import ConfigFactory
-from src.db.db_init import init_db
-from src.db.helper import create_admin, create_tables
+from api import api
+from api.v1.routes import auth_app
+from config import ConfigFactory
+from db.db_init import init_db
+from db.helper import create_admin, create_tables
 
 
 def create_app():

@@ -2,7 +2,7 @@ import os
 
 from dotenv import load_dotenv
 
-from src.core.logger import logger
+from core.logger import logger
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 load_dotenv(os.path.join(basedir, "../.env"))

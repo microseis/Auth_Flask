@@ -2,11 +2,11 @@ from flask_jwt_extended import (create_access_token, create_refresh_token,
                                 get_jwt, get_jwt_identity)
 from pydantic.tools import lru_cache
 
-from src.core.checker import Checker
-from src.core.logger import logger
-from src.db.db_service import DbService
-from src.db.helper import RegisterUser
-from src.db.models import User
+from core.checker import Checker
+from core.logger import logger
+from db.db_service import DbService
+from db.helper import RegisterUser
+from db.models import User
 
 
 class UserService:
