@@ -1,36 +1,74 @@
-#import uuid
-from http import HTTPStatus
-from flask import (Response, jsonify, make_response, render_template,
-                   request, abort, Blueprint)
-#from flask_cors import cross_origin
-from flask_login import login_required, login_user, logout_user
-from src.core.logger import logger
-from service.user_service import UserService, get_user_service, UserExistsError, BadLoginError
+from flask import Blueprint, abort, jsonify, make_response, request
+from flask_jwt_extended import jwt_required
+from spectree import Response
 
-#from src.db.db_init import db, redis_db
-#from src.db.models import Role, User, UserRoles, UserHistory
-#from src.core.logger import logger
-#from flask_jwt_extended import (
-#    create_access_token, create_refresh_token, get_jwt_identity, jwt_required, JWTManager)
-#from distutils.util import strtobool
-from src.db.helper import RegisterUser
+from service.user_service import (BadLoginError, UserExistsError, UserService,
+                                  get_user_service)
+from src.api import api
+from src.core.logger import logger
+from src.db.helper import LoginUser, RegisterUser, UserTokens
 
 user_service: UserService = get_user_service()
 
-auth_app = Blueprint('auth', __name__)
+auth_app = Blueprint("auth", __name__)
 
 
 @auth_app.route("/register", methods=["POST"])
+@api.validate(
+    json=RegisterUser, resp=Response("HTTP_400", HTTP_200=RegisterUser), tags=["auth"]
+)
 def register_user():
     try:
         user_data = RegisterUser(**request.json)
         logger.info(user_data)
         user_service.register_user(user_data)
-        return jsonify({"message": "User has been created"})
+        return jsonify(user_data.dict())
     except UserExistsError:
         raise abort(409)
     except BadLoginError:
         raise abort(400)
+
+
+@auth_app.route("/sign_in", methods=["POST"])
+@api.validate(
+    json=LoginUser, resp=Response("HTTP_400", HTTP_200=UserTokens), tags=["auth"]
+)
+def sign_in():
+    user_data = LoginUser(**request.json)
+    user = user_service.sign_up_user(user_data)
+    if not user:
+        raise abort(409)
+
+    access_token, refresh_token = user_service.get_tokens(user)
+    return jsonify(
+        UserTokens(access_token=access_token, refresh_token=refresh_token).dict()
+    )
+
+
+@auth_app.route("/user_logout", methods=["POST"])
+@jwt_required()
+@api.validate(tags=["auth"], security={"Bearer": []})
+def user_logout():
+    old_token = user_service.user_logout()
+    if not old_token:
+        raise abort(409)
+    return {"message": "User has logged out"}
+
+
+#
+# @auth_app.route("/refresh", methods=["POST"])
+# @login_required
+# @cross_origin()
+# @jwt_required(refresh=False)
+# def refresh():
+#     # We are using the `refresh=True` options in jwt_required to only allow
+#     # refresh tokens to access this route.
+#     identity = get_jwt_identity()
+#     access_token = create_access_token(identity=identity)
+#     refresh_token = create_refresh_token(identity)
+#     redis_db.set(name=str(identity), value=refresh_token, ex=3600)
+#     return make_response(jsonify(access_token=access_token), 200)
+
 
 # @auth_app.route("/roles", methods=["GET"])
 # @cross_origin()
@@ -148,51 +186,6 @@ def register_user():
 #     db.session.commit()
 #     return {"message": "Role deleted"}
 #
-#
-
-#
-#
-# @auth_app.route("/login", methods=["POST"])
-# @cross_origin()
-# def loginUser():
-#     data = request.get_json()
-#     user = User.query.filter(
-#         User.login == data.get('login')
-#     ).first()
-#
-#     # if bcrypt.check_password_hash(user.password, data.get('password')):
-#     #     login_user(user)
-#     #     access_token = create_access_token(identity=user.id, fresh=True)
-#     #     refresh_token = create_refresh_token(user.id)
-#     #     user_session = UserHistory(user_id=user.id)
-#     #     db.session.add(user_session)
-#     #     redis_db.set(name=str(user.id), value=refresh_token, ex=3600)
-#     #     db.session.commit()
-#     #     return {"access_token": access_token, "refresh_token": refresh_token}, 200
-#
-#     return {"code": 401,
-#             "message": "Invalid credentials."}
-#
-#
-# @auth_app.route("/refresh", methods=["POST"])
-# @login_required
-# @cross_origin()
-# @jwt_required(refresh=False)
-# def refresh():
-#     # We are using the `refresh=True` options in jwt_required to only allow
-#     # refresh tokens to access this route.
-#     identity = get_jwt_identity()
-#     access_token = create_access_token(identity=identity)
-#     refresh_token = create_refresh_token(identity)
-#     redis_db.set(name=str(identity), value=refresh_token, ex=3600)
-#     return make_response(jsonify(access_token=access_token), 200)
-
-
-@auth_app.route("/user_logout", methods=["POST"])
-@login_required
-def logoutUser():
-    logout_user()
-    return {"message": "User has logged out"}
 
 
 @auth_app.errorhandler(400)
@@ -214,9 +207,10 @@ def handle_404_error(_error) -> Response:
 
 
 @auth_app.errorhandler(409)
-def handle_401_error(_error) -> Response:
+def handle_409_error(_error) -> Response:
     """Return a http 409 error to client"""
     return make_response(jsonify({"error": "User already exists"}), 409)
+
 
 @auth_app.errorhandler(500)
 def handle_500_error(_error) -> Response:

@@ -1,5 +1,6 @@
-from abc import ABC, abstractmethod
 import re
+from abc import ABC, abstractmethod
+
 from flask import Flask
 from flask_bcrypt import Bcrypt
 
@@ -8,7 +9,6 @@ bcrypt = Bcrypt(app)
 
 
 class AbstractChecker(ABC):
-
     @abstractmethod
     def hash_password(self, password: str):
         pass
@@ -22,17 +22,12 @@ class AbstractChecker(ABC):
 
 
 class Checker(AbstractChecker):
-
     def hash_password(self, password: str) -> str:
-        hashed_password = bcrypt.generate_password_hash(password).decode(
-            "utf-8"
-        )
+        hashed_password = bcrypt.generate_password_hash(password).decode("utf-8")
         return hashed_password
 
     def check_password_hash(self, hashed_password: str, password: str) -> bool:
         return bcrypt.check_password_hash(hashed_password, password)
-
-    import re
 
     def login_check(self, login: str) -> dict:
         # searching for symbols
@@ -42,6 +37,6 @@ class Checker(AbstractChecker):
         login_ok = not symbol_error
 
         return {
-            'login_ok': login_ok,
-            'symbol_error': symbol_error,
+            "login_ok": login_ok,
+            "symbol_error": symbol_error,
         }
