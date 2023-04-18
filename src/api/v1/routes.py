@@ -1,21 +1,27 @@
+import uuid
+
 from flask import Blueprint, abort, jsonify, make_response, request
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import get_jwt_identity, jwt_required
 from spectree import Response
 
+from db.db_init import redis_db
 from src.api import api
 from src.core.logger import logger
-from src.db.helper import LoginUser, RegisterUser, UserTokens
+from src.db.helper import (AccessToken, LoginUser, RegisterUser, RolesData,
+                           UserTokens)
+from src.service.role_service import RoleService, get_role_service
 from src.service.user_service import (BadLoginError, UserExistsError,
                                       UserService, get_user_service)
 
+role_service: RoleService = get_role_service()
 user_service: UserService = get_user_service()
 
-auth_app = Blueprint("auth", __name__)
+auth_app = Blueprint("Auth", __name__)
 
 
 @auth_app.route("/register", methods=["POST"])
 @api.validate(
-    json=RegisterUser, resp=Response("HTTP_400", HTTP_200=RegisterUser), tags=["auth"]
+    json=RegisterUser, resp=Response("HTTP_400", HTTP_200=RegisterUser), tags=["Auth"]
 )
 def register_user():
     try:
@@ -31,7 +37,7 @@ def register_user():
 
 @auth_app.route("/sign_in", methods=["POST"])
 @api.validate(
-    json=LoginUser, resp=Response("HTTP_400", HTTP_200=UserTokens), tags=["auth"]
+    json=LoginUser, resp=Response("HTTP_400", HTTP_200=UserTokens), tags=["Auth"]
 )
 def sign_in():
     user_data = LoginUser(**request.json)
@@ -47,7 +53,7 @@ def sign_in():
 
 @auth_app.route("/user_logout", methods=["POST"])
 @jwt_required()
-@api.validate(tags=["auth"], security={"Bearer": []})
+@api.validate(tags=["Auth"], security={"Bearer": []})
 def user_logout():
     old_token = user_service.user_logout()
     if not old_token:
@@ -55,58 +61,66 @@ def user_logout():
     return {"message": "User has logged out"}
 
 
-#
-# @auth_app.route("/refresh", methods=["POST"])
-# @login_required
-# @cross_origin()
-# @jwt_required(refresh=False)
-# def refresh():
-#     # We are using the `refresh=True` options in jwt_required to only allow
-#     # refresh tokens to access this route.
-#     identity = get_jwt_identity()
-#     access_token = create_access_token(identity=identity)
-#     refresh_token = create_refresh_token(identity)
-#     redis_db.set(name=str(identity), value=refresh_token, ex=3600)
-#     return make_response(jsonify(access_token=access_token), 200)
+@auth_app.route("/refresh", methods=["POST"])
+@jwt_required(refresh=True)
+@api.validate(resp=Response("HTTP_400", HTTP_200=AccessToken), tags=["Auth"])
+def refresh():
+    # We are using the `refresh=True` options in jwt_required to only allow
+    # refresh tokens to access this route.
+    identity = get_jwt_identity()
+    access_token, refresh_token = user_service.get_tokens(identity)
+    redis_db.set(name=str(identity), value=refresh_token, ex=3600)
+    return make_response(jsonify(access_token=access_token), 200)
 
 
-# @auth_app.route("/roles", methods=["GET"])
-# @cross_origin()
-# def get_all_roles():
-#     roles = Role.query.all()
-#     output = []
-#     for item in roles:
-#         role_data = {"id": item.id,
-#                      "name": item.name,
-#                      "is_superuser": item.is_superuser,
-#                      "is_privileged": item.is_privileged}
-#         output.append(role_data)
-#
-#     return {"roles": output}
-#
-#
-# @auth_app.route("/roles/<id>", methods=["GET"])
-# @cross_origin()
-# def get_role_by_id(id: uuid):
-#     role = Role.query.get_or_404(id)
-#     return {"name": role.name, "id": role.id}
-#
-#
-# @auth_app.route("/roles/<id>", methods=["PUT"])
-# @cross_origin()
-# def update_role_by_id(id: uuid):
-#     role = Role.query.get_or_404(id)
-#     role.name = request.args.get("role_name")
-#     role.is_privileged = strtobool(request.args.get("is_privileged").lower())
-#     role.is_superuser = strtobool(request.args.get("is_superuser").lower())
-#     db.session.commit()
-#     return {
-#         "name": role.name,
-#         "id": role.id,
-#         "is_privileged": role.is_privileged,
-#         "is_superuser": role.is_superuser
-#     }
-#
+@auth_app.route("/roles", methods=["GET"])
+@api.validate(tags=["Role"], resp=Response("HTTP_400"))
+def get_all_roles():
+    output = role_service.get_all_roles()
+    if not output:
+        raise abort(400)
+    return output
+
+
+@auth_app.route("/roles/<id>", methods=["GET"])
+@api.validate(resp=Response("HTTP_400", HTTP_200=RolesData), tags=["Role"])
+def get_role_by_id(id: uuid):
+    role = role_service.get_role_by_id(id)
+    if not role:
+        raise abort(400)
+    return role
+
+
+@auth_app.route("/roles/<id>", methods=["PUT"])
+@api.validate(
+    json=RolesData, resp=Response("HTTP_400", HTTP_200=RolesData), tags=["Role"]
+)
+def update_role_by_id(id: uuid):
+    role_data = RolesData(**request.json)
+    role = role_service.update_role_by_id(id, role_data)
+    if not role:
+        raise abort(400)
+    return role
+
+
+@auth_app.route("/roles/<id>", methods=["DELETE"])
+@api.validate(json=RolesData, resp=Response("HTTP_400"), tags=["Role"])
+def delete_role(id: uuid) -> dict:
+    result = role_service.delete_role_by_id(id)
+    if not result:
+        raise abort(400)
+    return result
+
+
+@auth_app.route("/users/<id>", methods=["DELETE"])
+@api.validate(json=RolesData, resp=Response("HTTP_400"), tags=["User Management"])
+def delete_user_role_by_id(id: uuid):
+    result = role_service.delete_user_role_by_id(id)
+    if not result:
+        raise abort(400)
+    return result
+
+
 #
 # @auth_app.route("/users/<id>", methods=["PUT"])
 # @cross_origin()
@@ -147,17 +161,8 @@ def user_logout():
 #         else:
 #             return {"error": "No such role"}
 #
-#
-# @auth_app.route("/users/<id>", methods=["DELETE"])
-# @cross_origin()
-# def delete_user_role_by_id(id: uuid):
-#     user_role = UserRoles.query.filter_by(user_id=id).first()
-#     if user_role is not None:
-#         db.session.delete(user_role)
-#         db.session.commit()
-#         return {"user_id": user_role.user_id, "result": "Role deleted"}
-#     else:
-#         return {"error": "The user has no any role"}
+
+
 #
 #
 # @auth_app.route("/roles", methods=["POST"])
@@ -175,16 +180,6 @@ def user_logout():
 #     else:
 #         return {"error": " The role already exists"}
 #
-#
-# @auth_app.route("/roles/<id>", methods=["DELETE"])
-# @cross_origin()
-# def delete_role(id: uuid) -> dict:
-#     role = Role.query.get(id)
-#     if role is None:
-#         return {"error": "No such role"}
-#     db.session.delete(role)
-#     db.session.commit()
-#     return {"message": "Role deleted"}
 #
 
 

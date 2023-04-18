@@ -1,3 +1,6 @@
+import uuid
+from typing import Optional
+
 from flask import Flask
 from pydantic import BaseModel, Field
 
@@ -56,3 +59,13 @@ class LoginUser(RegisterUser):
 class UserTokens(BaseModel):
     access_token: str
     refresh_token: str
+
+
+class AccessToken(BaseModel):
+    access_token: str
+
+
+class RolesData(BaseModel):
+    name: str
+    is_superuser: bool
+    is_privileged: bool

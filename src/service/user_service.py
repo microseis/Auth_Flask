@@ -18,7 +18,7 @@ class UserService:
         check_result = self.checker.login_check(user_data.login)
         if not check_result.get("login_ok"):
             raise BadLoginError
-        if not self.db_service.add(
+        if not self.db_service.add_user(
             User(
                 login=user_data.login,
                 password=self.checker.hash_password(user_data.password),
@@ -27,7 +27,7 @@ class UserService:
             raise UserExistsError
 
     def sign_up_user(self, user_data) -> User:
-        user = User.query.filter(User.login == user_data.login).first()
+        user = self.db_service.is_user_exist(user_data)
         if not user:
             raise BadLoginError
         if not self.checker.check_password_hash(user.password, user_data.password):
