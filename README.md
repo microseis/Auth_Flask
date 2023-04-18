@@ -28,7 +28,12 @@ Aleksei Stepanov: https://github.com/microseis
 ## API Spec
 http://127.0.0.1:8000/api/openapi
 
-## Create Superuser Console Command
+## Console Commands
+-Create Superuser
 ```commandline
- python src/create_db_tables.py --adminlogin --adminpassword
+ flask --app main.py createsuperuser --admin_password 12345 
+```
+-Create Database Tables
+```commandline
+ flask --app main.py create_db_tables  
 ```

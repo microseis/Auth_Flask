@@ -1,12 +1,14 @@
 from datetime import timedelta
 
+import click
 from flask import Flask
 from flask_jwt_extended import JWTManager
 
-from api.v1.routes import auth_app
-from config import ConfigFactory
-from src.api import spec
+from src.api import api
+from src.api.v1.routes import auth_app
+from src.config import ConfigFactory
 from src.db.db_init import init_db
+from src.db.helper import create_admin, create_tables
 
 
 def create_app():
@@ -20,7 +22,21 @@ def create_app():
     init_db(app)
 
     app.register_blueprint(auth_app, url_prefix="/api/v1")
-    spec.register(app)
+    api.register(app)
+
+    @click.option("--admin_password")
+    @app.cli.command()
+    def createsuperuser(admin_password):
+        """Create admin/superuser"""
+        click.echo("Creating the admin if not exist..")
+        create_admin(admin_password)
+
+    @app.cli.command()
+    def createdbtables(app):
+        """Create tables"""
+        click.echo("Creating tables if not exist..")
+        create_tables(app)
+
     return app
 
 

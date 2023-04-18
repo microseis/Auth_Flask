@@ -2,11 +2,11 @@ from flask import Blueprint, abort, jsonify, make_response, request
 from flask_jwt_extended import jwt_required
 from spectree import Response
 
-from service.user_service import (BadLoginError, UserExistsError, UserService,
-                                  get_user_service)
 from src.api import api
 from src.core.logger import logger
 from src.db.helper import LoginUser, RegisterUser, UserTokens
+from src.service.user_service import (BadLoginError, UserExistsError,
+                                      UserService, get_user_service)
 
 user_service: UserService = get_user_service()
 

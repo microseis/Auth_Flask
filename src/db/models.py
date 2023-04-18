@@ -1,13 +1,12 @@
 import uuid
 from datetime import datetime
 
-from flask_login import UserMixin
 from sqlalchemy.dialects.postgresql import UUID
 
 from src.db.db_init import db
 
 
-class User(db.Model, UserMixin):
+class User(db.Model):
     __tablename__ = "users"
 
     id = db.Column(

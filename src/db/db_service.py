@@ -1,3 +1,4 @@
+from src.core.logger import logger
 from src.db.db_init import db
 
 
@@ -9,4 +10,4 @@ class DbService:
             db.session.commit()
             return "User created"
         except Exception as e:
-            print(e)
+            logger.info(e)
