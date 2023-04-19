@@ -12,7 +12,8 @@ from db.helper import (AccessToken, LoginUser, Message, PasswordData,
                        UserTokens)
 from service.role_service import RoleService, get_role_service
 from service.user_service import (BadLoginError, UserExistsError, UserService,
-                                  WrongPasswordError, get_user_service)
+                                  WrongPasswordError, for_admins,
+                                  get_user_service)
 
 role_service: RoleService = get_role_service()
 user_service: UserService = get_user_service()
@@ -64,6 +65,21 @@ def login():
         abort(403)
 
 
+@auth_app.route("/user_history", methods=["GET"])
+@jwt_required()
+@api.validate(tags=["Auth"], security={"Bearer": []})
+def get_user_history():
+    """Получение истории входов в аккаунт"""
+    identity: uuid = get_jwt_identity()
+    history = user_service.get_user_history(identity)
+    if not history:
+        raise abort(400)
+    if len(history) > 1:
+        return jsonify([h for h in history])
+    else:
+        return jsonify(history)
+
+
 @auth_app.route("/user_logout", methods=["POST"])
 @jwt_required()
 @api.validate(tags=["Auth"], security={"Bearer": []})
@@ -111,12 +127,17 @@ def refresh():
 
 @auth_app.route("/roles", methods=["GET"])
 @api.validate(tags=["Role"], resp=Response("HTTP_400"))
+@jwt_required()
+@for_admins()
 def get_all_roles():
     """Получение списка всех ролей"""
-    output = role_service.get_all_roles()
-    if not output:
-        raise abort(400)
-    return output
+    try:
+        output = role_service.get_all_roles()
+        if not output:
+            raise abort(400)
+        return output
+    except PermissionError:
+        raise abort(403)
 
 
 @auth_app.route("/roles/<id>", methods=["GET"])
@@ -212,6 +233,12 @@ def handle_404_error(_error) -> Response:
 def handle_409_error(_error) -> Response:
     """Return a http 409 error to client"""
     return make_response(jsonify({"error": "User already exists"}), 409)
+
+
+@auth_app.errorhandler(PermissionError)
+def handle_permission_error(_error) -> Response:
+    """Return a http 403 error to client"""
+    return make_response(jsonify({"error": "Permission error"}), 403)
 
 
 @auth_app.errorhandler(500)

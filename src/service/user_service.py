@@ -1,12 +1,17 @@
+import uuid
+from functools import wraps
+
 from flask_jwt_extended import (create_access_token, create_refresh_token,
-                                get_jwt, get_jwt_identity)
+                                get_jwt, get_jwt_identity, jwt_required)
 from pydantic.tools import lru_cache
 
 from core.checker import Checker
 from core.logger import logger
+from db.db_init import redis_db
 from db.db_service import DbService
 from db.helper import LoginUser, PasswordData, RegisterUser
-from db.models import User
+from db.models import User, UserHistory
+from service.role_service import RoleService
 
 
 class UserService:
@@ -56,10 +61,9 @@ class UserService:
     def get_tokens(user_id: str) -> [str, str]:
         access_token = create_access_token(identity=user_id)
         refresh_token = create_refresh_token(user_id)
-        # user_session = UserHistory(user_id=user.id)
-        # db.session.add(user_session)
-        # redis_db.set(name=str(user.id), value=refresh_token, ex=3600)
-        # db.session.commit()
+
+        redis_db.set(name=str(user_id), value=refresh_token, ex=3600)
+
         return access_token, refresh_token
 
     @staticmethod
@@ -70,10 +74,40 @@ class UserService:
         logger.info(token)
         return token
 
+    def get_user_history(self, identity: uuid):
+        history: list = self.db_service.get_history(identity)
+        if not history:
+            raise NoUserHistoryError
+        history_list = []
+        for h in history:
+            history_list.append(
+                {
+                    "ip": h.ip_address,
+                    "usr_agent": h.user_agent,
+                    "date_logged_in": h.date_logged_in,
+                }
+            )
+        return history_list
+
 
 @lru_cache()
 def get_user_service():
     return UserService(Checker(), DbService())
+
+
+def for_admins():
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            user_role = RoleService(DbService()).get_user_role_by_id(get_jwt_identity())
+            if user_role.get("name") == "Admin":
+                return func(*args, **kwargs)
+            else:
+                raise PermissionError("Permission Error")
+
+        return wrapper
+
+    return decorator
 
 
 class UserExistsError(Exception):
@@ -89,4 +123,8 @@ class WrongPasswordError(Exception):
 
 
 class BadPasswordError(Exception):
+    pass
+
+
+class NoUserHistoryError(Exception):
     pass

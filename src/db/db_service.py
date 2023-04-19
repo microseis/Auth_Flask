@@ -20,9 +20,9 @@ class DbService:
     @staticmethod
     def add_history(user_id: uuid, user_ip: str, user_agent: str) -> None:
         user = User.query.filter(User.id == user_id).first()
-        user.history = [
+        user.history.append(
             UserHistory(user_id=user_id, ip_address=user_ip, user_agent=user_agent)
-        ]
+        )
 
         db.session.commit()
 
@@ -41,12 +41,31 @@ class DbService:
         return {"result": "Success"}
 
     @staticmethod
+    def get_history(user_id: uuid) -> Optional[UserHistory]:
+        history = (
+            db.session.query(UserHistory)
+            .filter(UserHistory.user_id == user_id)
+            .limit(5)
+            .all()
+        )
+        return history
+
+    @staticmethod
     def get_roles_from_db() -> Optional[Role]:
         return Role.query.all()
 
     @staticmethod
     def get_role_by_id(role_id: uuid) -> Optional[Role]:
         return Role.query.get_or_404(role_id)
+
+    @staticmethod
+    def get_user_role_by_id(user_id: uuid):
+        user_roles = (
+            Role.query.filter(User.id == user_id)
+            .filter(Role.id == UserRoles.role_id)
+            .first()
+        )
+        return user_roles
 
     @staticmethod
     def add_new_role(role_data: RolesData) -> Optional[Role]:

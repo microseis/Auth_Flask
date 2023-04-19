@@ -1,5 +1,7 @@
+import uuid
 from functools import lru_cache
 
+from core.logger import logger
 from db.db_service import DbService
 from db.helper import RolesData
 
@@ -35,6 +37,16 @@ class RoleService:
             "is_superuser": role.is_superuser,
             "is_privileged": role.is_privileged,
         }
+
+    def get_user_role_by_id(self, user_id: uuid) -> dict:
+        user_role = self.db_service.get_user_role_by_id(user_id)
+        logger.info("user role: %s", user_role)
+        if user_role:
+            return {
+                "name": user_role.name,
+                "is_superuser": user_role.is_superuser,
+                "is_privileged": user_role.is_privileged,
+            }
 
     def update_role_by_id(self, role_id: str, request) -> dict:
         role = self.db_service.update_role_by_id(role_id, request=request)
