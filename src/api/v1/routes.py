@@ -121,7 +121,6 @@ def refresh():
     # refresh tokens to access this route.
     identity = get_jwt_identity()
     access_token, refresh_token = user_service.get_tokens(identity)
-    redis_db.set(name=str(identity), value=refresh_token, ex=3600)
     return make_response(jsonify(access_token=access_token), 200)
 
 
@@ -142,6 +141,8 @@ def get_all_roles():
 
 @auth_app.route("/roles/<id>", methods=["GET"])
 @api.validate(resp=Response("HTTP_400", HTTP_200=RolesData), tags=["Role"])
+@jwt_required()
+@for_admins()
 def get_role_by_id(id: uuid):
     """Получение роли по заданному id"""
     role = role_service.get_role_by_id(id)
@@ -154,6 +155,8 @@ def get_role_by_id(id: uuid):
 @api.validate(
     json=RolesData, resp=Response("HTTP_400", HTTP_200=RolesData), tags=["Role"]
 )
+@jwt_required()
+@for_admins()
 def update_role_by_id(id: uuid):
     """Обновление роли по заданному id"""
     role_data = RolesData(**request.json)
@@ -165,8 +168,10 @@ def update_role_by_id(id: uuid):
 
 @auth_app.route("/roles", methods=["POST"])
 @api.validate(json=RolesData, resp=Response("HTTP_400"), tags=["Role"])
+@jwt_required()
+@for_admins()
 def add_role() -> dict:
-    """Добавление новой роли"""
+    """Создание новой роли"""
     role_data = RolesData(**request.json)
     result = role_service.add_role(role_data)
     if not result:
@@ -176,6 +181,8 @@ def add_role() -> dict:
 
 @auth_app.route("/roles/<id>", methods=["DELETE"])
 @api.validate(json=RolesData, resp=Response("HTTP_400"), tags=["Role"])
+@jwt_required()
+@for_admins()
 def delete_role(id: uuid) -> dict:
     """Удаление роли по заданному id"""
     result = role_service.delete_role_by_id(id)
@@ -186,6 +193,8 @@ def delete_role(id: uuid) -> dict:
 
 @auth_app.route("/users/<id>", methods=["DELETE"])
 @api.validate(json=UserData, resp=Response("HTTP_400"), tags=["User Management"])
+@jwt_required()
+@for_admins()
 def delete_user_role_by_id(id: uuid):
     """Удаление роли пользователя по id"""
     result = role_service.delete_user_role_by_id(id)
@@ -196,6 +205,8 @@ def delete_user_role_by_id(id: uuid):
 
 @auth_app.route("/users/<user_id>", methods=["PUT"])
 @api.validate(json=UserRoleData, resp=Response("HTTP_400"), tags=["User Management"])
+@jwt_required()
+@for_admins()
 def update_user_role_by_id(user_id: uuid):
     """Обновление роли пользователя по id"""
     role_data = UserRoleData(**request.json)

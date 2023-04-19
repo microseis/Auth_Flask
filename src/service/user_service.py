@@ -2,7 +2,7 @@ import uuid
 from functools import wraps
 
 from flask_jwt_extended import (create_access_token, create_refresh_token,
-                                get_jwt, get_jwt_identity, jwt_required)
+                                get_jwt, get_jwt_identity)
 from pydantic.tools import lru_cache
 
 from core.checker import Checker
@@ -10,7 +10,7 @@ from core.logger import logger
 from db.db_init import redis_db
 from db.db_service import DbService
 from db.helper import LoginUser, PasswordData, RegisterUser
-from db.models import User, UserHistory
+from db.models import User
 from service.role_service import RoleService
 
 
@@ -61,8 +61,8 @@ class UserService:
     def get_tokens(user_id: str) -> [str, str]:
         access_token = create_access_token(identity=user_id)
         refresh_token = create_refresh_token(user_id)
-
-        redis_db.set(name=str(user_id), value=refresh_token, ex=3600)
+        redis_db.set(str(user_id), access_token, ex=15 * 60)
+        redis_db.set(refresh_token, "", ex=15 * 60)
 
         return access_token, refresh_token
 
