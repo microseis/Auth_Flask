@@ -8,7 +8,7 @@ from api import api
 from core.logger import logger
 from db.db_init import redis_db
 from db.helper import (AccessToken, LoginUser, RegisterUser, RolesData,
-                       UserTokens)
+                       UserData, UserRoleData, UserTokens)
 from service.role_service import RoleService, get_role_service
 from service.user_service import (BadLoginError, UserExistsError, UserService,
                                   get_user_service)
@@ -103,6 +103,16 @@ def update_role_by_id(id: uuid):
     return role
 
 
+@auth_app.route("/roles", methods=["POST"])
+@api.validate(json=RolesData, resp=Response("HTTP_400"), tags=["Role"])
+def add_role() -> dict:
+    role_data = RolesData(**request.json)
+    result = role_service.add_role(role_data)
+    if not result:
+        raise abort(400)
+    return result
+
+
 @auth_app.route("/roles/<id>", methods=["DELETE"])
 @api.validate(json=RolesData, resp=Response("HTTP_400"), tags=["Role"])
 def delete_role(id: uuid) -> dict:
@@ -113,7 +123,7 @@ def delete_role(id: uuid) -> dict:
 
 
 @auth_app.route("/users/<id>", methods=["DELETE"])
-@api.validate(json=RolesData, resp=Response("HTTP_400"), tags=["User Management"])
+@api.validate(json=UserData, resp=Response("HTTP_400"), tags=["User Management"])
 def delete_user_role_by_id(id: uuid):
     result = role_service.delete_user_role_by_id(id)
     if not result:
@@ -121,66 +131,14 @@ def delete_user_role_by_id(id: uuid):
     return result
 
 
-#
-# @auth_app.route("/users/<id>", methods=["PUT"])
-# @cross_origin()
-# def update_user_role_by_id(id: uuid):
-#     logger.info("Requested Role:", request.args.get("role_name"))
-#     user_role = UserRoles.query.filter_by(user_id=id).first()
-#     if user_role is not None:
-#         role = Role.query.filter_by(id=user_role.role_id).first()
-#         logger.info("The user has existing role: ", role.name)
-#         role_check = Role.query.filter_by(name=request.args.get("role_name")).first()
-#         logger.info(role_check)
-#         if role_check:
-#             logger.info("Proposed role exists in database")
-#             user_role.role_id = role_check.id
-#             db.session.commit()
-#             return {
-#                 "user_id": user_role.user_id,
-#                 "new_role": request.args.get("role_name"),
-#             }
-#
-#         else:
-#             return {"error": "No such role"}
-#     else:
-#         logger.info("The user has no existing role")
-#         role_check = Role.query.filter_by(name=request.args.get("role_name")).first()
-#
-#         if role_check:
-#             logger.info("Proposed role exists in database")
-#             new_user_role = UserRoles()
-#             new_user_role.role_id = role_check.id
-#             new_user_role.user_id = id
-#             db.session.add(new_user_role)
-#             db.session.commit()
-#             return {
-#                 "user_id": new_user_role.user_id,
-#                 "new_role": request.args.get("role_name"),
-#             }
-#         else:
-#             return {"error": "No such role"}
-#
-
-
-#
-#
-# @auth_app.route("/roles", methods=["POST"])
-# @cross_origin()
-# def add_role() -> dict:
-#     if not Role.query.filter(Role.name == request.json["name"]).first():
-#         role = Role(
-#             name=request.json["name"],
-#             is_superuser=request.json["is_superuser"],
-#             is_privileged=request.json["is_privileged"]
-#         )
-#         db.session.add(role)
-#         db.session.commit()
-#         return {"id": role.id}
-#     else:
-#         return {"error": " The role already exists"}
-#
-#
+@auth_app.route("/users/<user_id>", methods=["PUT"])
+@api.validate(json=UserRoleData, resp=Response("HTTP_400"), tags=["User Management"])
+def update_user_role_by_id(user_id: uuid):
+    role_data = UserRoleData(**request.json)
+    result = role_service.update_user_role_by_id(user_id, role_data)
+    if not result:
+        raise abort(400)
+    return result
 
 
 @auth_app.errorhandler(400)

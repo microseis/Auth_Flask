@@ -5,7 +5,7 @@ from pydantic.tools import lru_cache
 from core.checker import Checker
 from core.logger import logger
 from db.db_service import DbService
-from db.helper import RegisterUser
+from db.helper import LoginUser, RegisterUser
 from db.models import User
 
 
@@ -26,7 +26,7 @@ class UserService:
         ):
             raise UserExistsError
 
-    def sign_up_user(self, user_data) -> User:
+    def sign_up_user(self, user_data: LoginUser) -> User:
         user = self.db_service.is_user_exist(user_data)
         if not user:
             raise BadLoginError
@@ -45,7 +45,7 @@ class UserService:
         return access_token, refresh_token
 
     @staticmethod
-    def user_logout():
+    def user_logout() -> dict:
         token = get_jwt()
         current_user = get_jwt_identity()
         logger.info(current_user)

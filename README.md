@@ -26,7 +26,7 @@ April 18, 2023:
 Aleksei Stepanov: https://github.com/microseis
 
 ## API Spec
-http://127.0.0.1:8000/api/openapi
+http://localhost:8000/apidoc/swagger/
 
 ## Console Commands
 -Create Superuser

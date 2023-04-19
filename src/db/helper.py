@@ -1,5 +1,8 @@
+import uuid
+
 from flask import Flask
 from pydantic import BaseModel, Field
+from pydantic.validators import UUID
 
 from core.checker import bcrypt
 from core.logger import logger
@@ -66,3 +69,11 @@ class RolesData(BaseModel):
     name: str
     is_superuser: bool
     is_privileged: bool
+
+
+class UserData(BaseModel):
+    login: str
+
+
+class UserRoleData(BaseModel):
+    role_name: str
