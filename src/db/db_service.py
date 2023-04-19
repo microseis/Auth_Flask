@@ -3,8 +3,8 @@ from typing import Optional
 
 from core.logger import logger
 from db.db_init import db
-from db.helper import LoginUser, PasswordData
-from db.models import Role, User, UserRoles
+from db.helper import RolesData
+from db.models import Role, User, UserHistory, UserRoles
 
 
 class DbService:
@@ -16,6 +16,15 @@ class DbService:
             return "User created"
         except Exception as e:
             logger.info(e)
+
+    @staticmethod
+    def add_history(user_id: uuid, user_ip: str, user_agent: str) -> None:
+        user = User.query.filter(User.id == user_id).first()
+        user.history = [
+            UserHistory(user_id=user_id, ip_address=user_ip, user_agent=user_agent)
+        ]
+
+        db.session.commit()
 
     @staticmethod
     def is_user_login_exist(login: str) -> Optional[User]:
@@ -40,7 +49,7 @@ class DbService:
         return Role.query.get_or_404(role_id)
 
     @staticmethod
-    def add_new_role(role_data: Role) -> Optional[Role]:
+    def add_new_role(role_data: RolesData) -> Optional[Role]:
         if not Role.query.filter(Role.name == role_data.name).first():
             role = Role(
                 name=role_data.name,

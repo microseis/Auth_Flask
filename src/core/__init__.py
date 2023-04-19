@@ -5,4 +5,6 @@ jwt_security_scheme = SecurityScheme(
     data={"type": "apiKey", "name": "Authorization", "in": "header"},
 )
 
-api = SpecTree("flask", security_schemes=[jwt_security_scheme])
+api = SpecTree(
+    "flask", security_schemes=[jwt_security_scheme], title="Auth Service API Spec"
+)

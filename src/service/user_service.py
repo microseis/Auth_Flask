@@ -18,20 +18,23 @@ class UserService:
         check_result = self.checker.login_check(user_data.login)
         if not check_result.get("login_ok"):
             raise BadLoginError
-        if not self.db_service.add_user(
+        created = self.db_service.add_user(
             User(
                 login=user_data.login,
                 password=self.checker.hash_password(user_data.password),
             )
-        ):
+        )
+        if not created:
             raise UserExistsError
+        return {"result": created}
 
-    def login_user(self, user_data: LoginUser) -> User:
+    def login_user(self, user_data: LoginUser, user_ip: str, user_agent: str) -> User:
         user = self.db_service.is_user_login_exist(user_data.login)
         if not user:
             raise BadLoginError
         if not self.checker.check_password_hash(user.password, user_data.password):
             raise WrongPasswordError
+        self.db_service.add_history(user.id, user_ip, user_agent)
         return user
 
     def password_change(self, user_id, password_data: PasswordData):

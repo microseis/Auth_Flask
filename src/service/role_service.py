@@ -1,7 +1,7 @@
 from functools import lru_cache
 
 from db.db_service import DbService
-from db.models import Role
+from db.helper import RolesData
 
 
 class RoleService:
@@ -20,7 +20,7 @@ class RoleService:
             output.append(role_data)
         return output
 
-    def add_role(self, role_info: Role) -> dict:
+    def add_role(self, role_info: RolesData) -> dict:
         role = self.db_service.add_new_role(role_info)
         return {
             "name": role.name,

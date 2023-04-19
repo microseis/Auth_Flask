@@ -31,9 +31,9 @@ http://localhost:8000/apidoc/swagger/
 ## Console Commands
 -Create Superuser
 ```commandline
- flask --app main.py createsuperuser --admin_password 12345 
+ flask --app src/main.py createsuperuser --admin_password 12345 
 ```
 -Create Database Tables
 ```commandline
- flask --app main.py create_db_tables  
+ flask --app src/main.py createdbtables  
 ```

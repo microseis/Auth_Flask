@@ -4,9 +4,9 @@ import click
 from flask import Flask
 from flask_jwt_extended import JWTManager
 
-from api import api
 from api.v1.routes import auth_app
 from config import ConfigFactory
+from core import api
 from db.db_init import init_db
 from db.helper import create_admin, create_tables
 
@@ -23,6 +23,7 @@ def create_app():
 
     app.register_blueprint(auth_app, url_prefix="/api/v1")
     api.register(app)
+    app.app_context().push()
 
     @click.option("--admin_password")
     @app.cli.command()
@@ -32,7 +33,7 @@ def create_app():
         create_admin(admin_password)
 
     @app.cli.command()
-    def createdbtables(app):
+    def createdbtables():
         """Create tables"""
         click.echo("Creating tables if not exist..")
         create_tables(app)

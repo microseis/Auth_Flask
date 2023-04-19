@@ -4,11 +4,12 @@ from flask import Blueprint, abort, jsonify, make_response, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from spectree import Response
 
-from api import api
+from core import api
 from core.logger import logger
 from db.db_init import redis_db
-from db.helper import (AccessToken, LoginUser, PasswordData, RegisterUser,
-                       RolesData, UserData, UserRoleData, UserTokens)
+from db.helper import (AccessToken, LoginUser, Message, PasswordData,
+                       RegisterUser, RolesData, UserData, UserRoleData,
+                       UserTokens)
 from service.role_service import RoleService, get_role_service
 from service.user_service import (BadLoginError, UserExistsError, UserService,
                                   WrongPasswordError, get_user_service)
@@ -21,14 +22,14 @@ auth_app = Blueprint("Auth", __name__)
 
 @auth_app.route("/register", methods=["POST"])
 @api.validate(
-    json=RegisterUser, resp=Response("HTTP_400", HTTP_200=RegisterUser), tags=["Auth"]
+    json=RegisterUser, resp=Response("HTTP_400", HTTP_200=Message), tags=["Auth"]
 )
 def register_user():
+    """Регистрация пользователя"""
     try:
         user_data = RegisterUser(**request.json)
-        logger.info(user_data)
-        user_service.register_user(user_data)
-        return jsonify(user_data.dict())
+        result = user_service.register_user(user_data)
+        return jsonify(result)
     except UserExistsError:
         raise abort(409)
     except BadLoginError:
@@ -36,11 +37,16 @@ def register_user():
 
 
 @auth_app.route("/login", methods=["POST"])
-@api.validate(resp=Response("HTTP_400", HTTP_200=UserTokens), tags=["Auth"])
+@api.validate(
+    json=LoginUser, resp=Response("HTTP_400", HTTP_200=UserTokens), tags=["Auth"]
+)
 def login():
+    """Вход пользователя в аккаунт"""
     user_data = LoginUser(**request.json)
     try:
-        user = user_service.login_user(user_data)
+        user = user_service.login_user(
+            user_data, request.remote_addr, str(request.user_agent)
+        )
         access_token, refresh_token = user_service.get_tokens(user.id)
         logger.info(access_token)
         return make_response(
@@ -62,6 +68,7 @@ def login():
 @jwt_required()
 @api.validate(tags=["Auth"], security={"Bearer": []})
 def user_logout():
+    """Выход пользователя из аккаунта"""
     old_token = user_service.user_logout()
     if not old_token:
         raise abort(409)
@@ -72,6 +79,7 @@ def user_logout():
 @jwt_required()
 @api.validate(json=PasswordData, tags=["Auth"], security={"Bearer": []})
 def change_password():
+    """Изменение пароля пользователя"""
     try:
         password_data = PasswordData(**request.json)
         result = user_service.password_change(
@@ -92,6 +100,7 @@ def change_password():
     security={"Bearer": []},
 )
 def refresh():
+    """Обновление access-токена"""
     # We are using the `refresh=True` options in jwt_required to only allow
     # refresh tokens to access this route.
     identity = get_jwt_identity()
@@ -103,6 +112,7 @@ def refresh():
 @auth_app.route("/roles", methods=["GET"])
 @api.validate(tags=["Role"], resp=Response("HTTP_400"))
 def get_all_roles():
+    """Получение списка всех ролей"""
     output = role_service.get_all_roles()
     if not output:
         raise abort(400)
@@ -112,6 +122,7 @@ def get_all_roles():
 @auth_app.route("/roles/<id>", methods=["GET"])
 @api.validate(resp=Response("HTTP_400", HTTP_200=RolesData), tags=["Role"])
 def get_role_by_id(id: uuid):
+    """Получение роли по заданному id"""
     role = role_service.get_role_by_id(id)
     if not role:
         raise abort(400)
@@ -123,6 +134,7 @@ def get_role_by_id(id: uuid):
     json=RolesData, resp=Response("HTTP_400", HTTP_200=RolesData), tags=["Role"]
 )
 def update_role_by_id(id: uuid):
+    """Обновление роли по заданному id"""
     role_data = RolesData(**request.json)
     role = role_service.update_role_by_id(id, role_data)
     if not role:
@@ -133,6 +145,7 @@ def update_role_by_id(id: uuid):
 @auth_app.route("/roles", methods=["POST"])
 @api.validate(json=RolesData, resp=Response("HTTP_400"), tags=["Role"])
 def add_role() -> dict:
+    """Добавление новой роли"""
     role_data = RolesData(**request.json)
     result = role_service.add_role(role_data)
     if not result:
@@ -143,6 +156,7 @@ def add_role() -> dict:
 @auth_app.route("/roles/<id>", methods=["DELETE"])
 @api.validate(json=RolesData, resp=Response("HTTP_400"), tags=["Role"])
 def delete_role(id: uuid) -> dict:
+    """Удаление роли по заданному id"""
     result = role_service.delete_role_by_id(id)
     if not result:
         raise abort(400)
@@ -152,6 +166,7 @@ def delete_role(id: uuid) -> dict:
 @auth_app.route("/users/<id>", methods=["DELETE"])
 @api.validate(json=UserData, resp=Response("HTTP_400"), tags=["User Management"])
 def delete_user_role_by_id(id: uuid):
+    """Удаление роли пользователя по id"""
     result = role_service.delete_user_role_by_id(id)
     if not result:
         raise abort(400)
@@ -161,6 +176,7 @@ def delete_user_role_by_id(id: uuid):
 @auth_app.route("/users/<user_id>", methods=["PUT"])
 @api.validate(json=UserRoleData, resp=Response("HTTP_400"), tags=["User Management"])
 def update_user_role_by_id(user_id: uuid):
+    """Обновление роли пользователя по id"""
     role_data = UserRoleData(**request.json)
     result = role_service.update_user_role_by_id(user_id, role_data)
     if not result:

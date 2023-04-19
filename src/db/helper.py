@@ -1,8 +1,7 @@
-import uuid
+from datetime import datetime
 
 from flask import Flask
 from pydantic import BaseModel, Field
-from pydantic.validators import UUID
 
 from core.checker import bcrypt
 from core.logger import logger
@@ -48,7 +47,6 @@ def create_admin(admin_password: str) -> None:
 
 
 class RegisterUser(BaseModel):
-    id: UUID = Field(default_factory=uuid.uuid4)
     login: str = Field(min_length=3)
     password: str = Field(min_length=3)
 
@@ -83,3 +81,13 @@ class UserRoleData(BaseModel):
 class PasswordData(BaseModel):
     old_password: str = Field(min_length=3)
     new_password: str = Field(min_length=3)
+
+
+class UserHistory(BaseModel):
+    date_logged_in: datetime
+    ip_address: str
+    user_agent: str
+
+
+class Message(BaseModel):
+    result: str
