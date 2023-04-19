@@ -48,6 +48,7 @@ def create_admin(admin_password: str) -> None:
 
 
 class RegisterUser(BaseModel):
+    id: UUID = Field(default_factory=uuid.uuid4)
     login: str = Field(min_length=3)
     password: str = Field(min_length=3)
 
@@ -77,3 +78,8 @@ class UserData(BaseModel):
 
 class UserRoleData(BaseModel):
     role_name: str
+
+
+class PasswordData(BaseModel):
+    old_password: str = Field(min_length=3)
+    new_password: str = Field(min_length=3)

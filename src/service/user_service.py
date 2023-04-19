@@ -5,7 +5,7 @@ from pydantic.tools import lru_cache
 from core.checker import Checker
 from core.logger import logger
 from db.db_service import DbService
-from db.helper import LoginUser, RegisterUser
+from db.helper import LoginUser, PasswordData, RegisterUser
 from db.models import User
 
 
@@ -26,18 +26,33 @@ class UserService:
         ):
             raise UserExistsError
 
-    def sign_up_user(self, user_data: LoginUser) -> User:
-        user = self.db_service.is_user_exist(user_data)
+    def login_user(self, user_data: LoginUser) -> User:
+        user = self.db_service.is_user_login_exist(user_data.login)
         if not user:
             raise BadLoginError
         if not self.checker.check_password_hash(user.password, user_data.password):
             raise WrongPasswordError
         return user
 
+    def password_change(self, user_id, password_data: PasswordData):
+        user = self.db_service.is_user_id_exist(user_id)
+        logger.info("Identity: %s", user_id)
+        if not user:
+            raise BadLoginError
+        if not self.checker.check_password_hash(
+            user.password, password_data.old_password
+        ):
+            raise WrongPasswordError
+        hashed = self.checker.hash_password(password_data.new_password)
+        changed = self.db_service.change_password(user, hashed)
+        if not changed:
+            raise BadPasswordError
+        return changed
+
     @staticmethod
-    def get_tokens(user: User) -> [str, str]:
-        access_token = create_access_token(identity=user.id)
-        refresh_token = create_refresh_token(user.id)
+    def get_tokens(user_id: str) -> [str, str]:
+        access_token = create_access_token(identity=user_id)
+        refresh_token = create_refresh_token(user_id)
         # user_session = UserHistory(user_id=user.id)
         # db.session.add(user_session)
         # redis_db.set(name=str(user.id), value=refresh_token, ex=3600)
@@ -67,4 +82,8 @@ class BadLoginError(Exception):
 
 
 class WrongPasswordError(Exception):
+    pass
+
+
+class BadPasswordError(Exception):
     pass

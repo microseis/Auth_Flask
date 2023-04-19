@@ -7,11 +7,11 @@ from spectree import Response
 from api import api
 from core.logger import logger
 from db.db_init import redis_db
-from db.helper import (AccessToken, LoginUser, RegisterUser, RolesData,
-                       UserData, UserRoleData, UserTokens)
+from db.helper import (AccessToken, LoginUser, PasswordData, RegisterUser,
+                       RolesData, UserData, UserRoleData, UserTokens)
 from service.role_service import RoleService, get_role_service
 from service.user_service import (BadLoginError, UserExistsError, UserService,
-                                  get_user_service)
+                                  WrongPasswordError, get_user_service)
 
 role_service: RoleService = get_role_service()
 user_service: UserService = get_user_service()
@@ -35,20 +35,27 @@ def register_user():
         raise abort(400)
 
 
-@auth_app.route("/sign_in", methods=["POST"])
-@api.validate(
-    json=LoginUser, resp=Response("HTTP_400", HTTP_200=UserTokens), tags=["Auth"]
-)
-def sign_in():
+@auth_app.route("/login", methods=["POST"])
+@api.validate(resp=Response("HTTP_400", HTTP_200=UserTokens), tags=["Auth"])
+def login():
     user_data = LoginUser(**request.json)
-    user = user_service.sign_up_user(user_data)
-    if not user:
-        raise abort(409)
+    try:
+        user = user_service.login_user(user_data)
+        access_token, refresh_token = user_service.get_tokens(user.id)
+        logger.info(access_token)
+        return make_response(
+            jsonify(
+                UserTokens(
+                    access_token=access_token, refresh_token=refresh_token
+                ).dict()
+            ),
+            200,
+        )
+    except BadLoginError:
+        abort(400)
 
-    access_token, refresh_token = user_service.get_tokens(user)
-    return jsonify(
-        UserTokens(access_token=access_token, refresh_token=refresh_token).dict()
-    )
+    except WrongPasswordError:
+        abort(403)
 
 
 @auth_app.route("/user_logout", methods=["POST"])
@@ -61,9 +68,29 @@ def user_logout():
     return {"message": "User has logged out"}
 
 
+@auth_app.route("/change_password", methods=["POST"])
+@jwt_required()
+@api.validate(json=PasswordData, tags=["Auth"], security={"Bearer": []})
+def change_password():
+    try:
+        password_data = PasswordData(**request.json)
+        result = user_service.password_change(
+            user_id=get_jwt_identity(), password_data=password_data
+        )
+        return make_response(jsonify(result), 200)
+    except BadLoginError:
+        abort(400)
+    except WrongPasswordError:
+        abort(403)
+
+
 @auth_app.route("/refresh", methods=["POST"])
-@jwt_required(refresh=True)
-@api.validate(resp=Response("HTTP_400", HTTP_200=AccessToken), tags=["Auth"])
+@jwt_required(refresh=False)
+@api.validate(
+    resp=Response("HTTP_400", HTTP_200=AccessToken),
+    tags=["Auth"],
+    security={"Bearer": []},
+)
 def refresh():
     # We are using the `refresh=True` options in jwt_required to only allow
     # refresh tokens to access this route.
@@ -151,6 +178,12 @@ def handle_400_error(_error) -> Response:
 def handle_401_error(_error) -> Response:
     """Return a http 401 error to client"""
     return make_response(jsonify({"error": "Unauthorised"}), 401)
+
+
+@auth_app.errorhandler(403)
+def handle_403_error(_error) -> Response:
+    """Return a http 403 error to client"""
+    return make_response(jsonify({"error": "Forbidden"}), 403)
 
 
 @auth_app.errorhandler(404)

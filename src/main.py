@@ -15,7 +15,7 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(ConfigFactory.factory())
     JWTManager(app)
-    app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
+    app.config["JWT_TOKEN_LOCATION"] = ["headers"]
     app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
     app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=30)
 

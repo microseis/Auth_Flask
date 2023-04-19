@@ -3,6 +3,7 @@ from typing import Optional
 
 from core.logger import logger
 from db.db_init import db
+from db.helper import LoginUser, PasswordData
 from db.models import Role, User, UserRoles
 
 
@@ -17,8 +18,18 @@ class DbService:
             logger.info(e)
 
     @staticmethod
-    def is_user_exist(user_data) -> Optional[User]:
-        return User.query.filter(User.login == user_data.login).first()
+    def is_user_login_exist(login: str) -> Optional[User]:
+        return User.query.filter(User.login == login).first()
+
+    @staticmethod
+    def is_user_id_exist(user_id: uuid) -> Optional[User]:
+        return User.query.filter(User.id == user_id).first()
+
+    @staticmethod
+    def change_password(user: User, new_hashed_password):
+        user.password = new_hashed_password
+        db.session.commit()
+        return {"result": "Success"}
 
     @staticmethod
     def get_roles_from_db() -> Optional[Role]:
@@ -29,7 +40,7 @@ class DbService:
         return Role.query.get_or_404(role_id)
 
     @staticmethod
-    def add_new_role(role_data) -> Optional[Role]:
+    def add_new_role(role_data: Role) -> Optional[Role]:
         if not Role.query.filter(Role.name == role_data.name).first():
             role = Role(
                 name=role_data.name,
@@ -67,7 +78,7 @@ class DbService:
         return user_role
 
     @staticmethod
-    def update_user_role_by_id(user_id, request):
+    def update_user_role_by_id(user_id: uuid, request):
         logger.info("Requested Role: %s", request.role_name)
         logger.info("User ID: %s", user_id)
         user_role = UserRoles.query.filter_by(user_id=user_id).first()
