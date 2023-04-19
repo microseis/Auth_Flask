@@ -28,7 +28,7 @@ def test_create_roles(client):
     )
     tokens = UserTokens(**access.json)
     res = client.post(
-        url_for("Auth.get_all_roles"),
+        url_for("Auth.add_role"),
         headers={"Authorization": "Bearer " + tokens.access_token},
         json=test_data.ROLE_TO_CREATE_AND_DELETE,
     )
@@ -38,7 +38,7 @@ def test_create_roles(client):
 
 @pytest.mark.parametrize(
     "test_login, expected",
-    [("string", HTTPStatus.OK), ("someuser", HTTPStatus.UNAUTHORIZED)],
+    [(test_data.TEST_LOGIN, HTTPStatus.OK), ("someuser", HTTPStatus.UNAUTHORIZED)],
 )
 def test_login(client, test_login, expected):
     res = client.post(
@@ -51,7 +51,8 @@ def test_login(client, test_login, expected):
 
 def test_get_role_by_id(client):
     access = client.post(
-        url_for("Auth.login"), json={"login": "string", "password": "string"}
+        url_for("Auth.login"),
+        json={"login": test_data.TEST_LOGIN, "password": test_data.TEST_PASSWORD},
     )
     tokens = UserTokens(**access.json)
     res = client.get(
@@ -64,7 +65,8 @@ def test_get_role_by_id(client):
 
 def test_update_role_by_id(client):
     access = client.post(
-        url_for("Auth.login"), json={"login": "string", "password": "string"}
+        url_for("Auth.login"),
+        json={"login": test_data.TEST_LOGIN, "password": test_data.TEST_PASSWORD},
     )
     tokens = UserTokens(**access.json)
     res = client.put(
@@ -78,7 +80,8 @@ def test_update_role_by_id(client):
 
 def test_delete_role_by_id(client):
     access = client.post(
-        url_for("Auth.login"), json={"login": "string", "password": "string"}
+        url_for("Auth.login"),
+        json={"login": test_data.TEST_LOGIN, "password": test_data.TEST_PASSWORD},
     )
     tokens = UserTokens(**access.json)
     res = client.delete(
@@ -88,3 +91,22 @@ def test_delete_role_by_id(client):
     )
 
     assert res.status_code == HTTPStatus.OK
+
+
+@pytest.mark.parametrize(
+    "test_role, expected",
+    [("Admin", HTTPStatus.OK), ("SomeRole", HTTPStatus.BAD_REQUEST)],
+)
+def test_update_user_role_by_id(client, test_role, expected):
+    access = client.post(
+        url_for("Auth.login"),
+        json={"login": test_data.TEST_LOGIN, "password": test_data.TEST_PASSWORD},
+    )
+    tokens = UserTokens(**access.json)
+    res = client.put(
+        url_for("Auth.update_user_role_by_id", user_id=test_data.TEST_USER_ID),
+        headers={"Authorization": "Bearer " + tokens.access_token},
+        json={"role_name": test_role},
+    )
+
+    assert res.status_code == expected

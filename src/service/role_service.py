@@ -74,8 +74,6 @@ class RoleService:
         role = self.db_service.update_user_role_by_id(role_id, role_data)
         if role is not None:
             return {"role_id": role.id, "result": "User role has been updated"}
-        else:
-            return {"error": "There is no such role"}
 
 
 @lru_cache()
