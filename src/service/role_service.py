@@ -40,7 +40,7 @@ class RoleService:
 
     def get_user_role_by_id(self, user_id: uuid) -> dict:
         user_role = self.db_service.get_user_role_by_id(user_id)
-        logger.info("user role: %s", user_role)
+        logger.info("user role: %s", user_role.name)
         if user_role:
             return {
                 "name": user_role.name,

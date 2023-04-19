@@ -5,8 +5,6 @@ from flask_jwt_extended import get_jwt_identity, jwt_required
 from spectree import Response
 
 from core import api
-from core.logger import logger
-from db.db_init import redis_db
 from db.helper import (AccessToken, LoginUser, Message, PasswordData,
                        RegisterUser, RolesData, UserData, UserRoleData,
                        UserTokens)
@@ -49,7 +47,6 @@ def login():
             user_data, request.remote_addr, str(request.user_agent)
         )
         access_token, refresh_token = user_service.get_tokens(user.id)
-        logger.info(access_token)
         return make_response(
             jsonify(
                 UserTokens(
@@ -59,7 +56,7 @@ def login():
             200,
         )
     except BadLoginError:
-        abort(400)
+        abort(401)
 
     except WrongPasswordError:
         abort(403)
