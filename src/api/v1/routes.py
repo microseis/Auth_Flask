@@ -64,7 +64,6 @@ def login():
 
 @auth_app.route("/user_history", methods=["GET"])
 @jwt_required()
-@api.validate(tags=["Auth"], security={"Bearer": []})
 def get_user_history():
     """Получение истории входов в аккаунт"""
     identity: uuid = get_jwt_identity()
