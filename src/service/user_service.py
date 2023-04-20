@@ -74,20 +74,28 @@ class UserService:
         logger.info(token)
         return token
 
-    def get_user_history(self, identity: uuid):
-        history: list = self.db_service.get_history(identity)
+    def get_user_history(self, identity: uuid, page: int, per_page: int):
+        history: list = self.db_service.get_history(identity, page, per_page)
         if not history:
             raise NoUserHistoryError
-        history_list = []
-        for h in history:
-            history_list.append(
+
+        results = {
+            "results": [
                 {
                     "ip": h.ip_address,
                     "usr_agent": h.user_agent,
                     "date_logged_in": h.date_logged_in,
                 }
-            )
-        return history_list
+                for h in history
+            ],
+            "pagination": {
+                "count": history.total,
+                "page": page,
+                "per_page": per_page,
+                "pages": history.pages,
+            },
+        }
+        return results
 
 
 @lru_cache()

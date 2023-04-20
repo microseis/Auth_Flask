@@ -41,12 +41,11 @@ class DbService:
         return {"result": "Success"}
 
     @staticmethod
-    def get_history(user_id: uuid) -> Optional[UserHistory]:
+    def get_history(user_id: uuid, page, per_page) -> Optional[UserHistory]:
         history = (
             db.session.query(UserHistory)
             .filter(UserHistory.user_id == user_id)
-            .limit(5)
-            .all()
+            .paginate(page=page, per_page=per_page)
         )
         return history
 

@@ -5,7 +5,7 @@ from flask import Flask
 from flask_jwt_extended import JWTManager
 
 from api.v1.routes import auth_app
-from config import ConfigFactory
+from config import Settings
 from core import api
 from db.db_init import init_db
 from db.helper import create_admin, create_tables
@@ -13,7 +13,7 @@ from db.helper import create_admin, create_tables
 
 def create_app():
     app = Flask(__name__)
-    app.config.from_object(ConfigFactory.factory())
+    app.config.from_object(Settings.factory())
     JWTManager(app)
     app.config["JWT_TOKEN_LOCATION"] = ["headers"]
     app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)

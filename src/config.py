@@ -1,6 +1,8 @@
 import os
+from functools import lru_cache
 
 from dotenv import load_dotenv
+from pydantic import BaseSettings
 
 from core.logger import logger
 
@@ -8,7 +10,7 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 load_dotenv(os.path.join(basedir, "../.env"))
 
 
-class ConfigFactory(object):
+class Settings(BaseSettings):
     @staticmethod
     def factory():
         env = os.environ.get("ENV", "development")
@@ -27,6 +29,8 @@ class Config:
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SECRET_KEY = os.environ.get("SECRET_KEY")
+    REDIS_HOST = os.environ.get("REDIS_HOST")
+    REDIS_PORT = int(os.environ.get("REDIS_PORT"))
 
 
 class Development(Config):
@@ -45,3 +49,8 @@ class Production(Config):
     DEBUG = True
     TESTING = False
     SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URI")
+
+
+@lru_cache()
+def get_settings() -> Settings:
+    return Settings()

@@ -1,5 +1,6 @@
 
 # Flask User Authentication App
+Repository url:  https://github.com/microseis/Auth_sprint_1 
 
 ## Run
 Run the app for development:
@@ -49,3 +50,19 @@ http://localhost:8000/apidoc/swagger/
 ```
 ## Run Tests
 Go to tests directory and type `pytest` command in console to run all tests
+
+## DB migration
+Creating the Migration Repository:
+```commandline
+flask --app src/main.py db init 
+```
+
+Creating the Initial Migration:
+```commandline
+flask --app src/main.py db migrate
+```
+Apply migrations:
+```commandline
+flask --app src/main.py db upgrade
+```
+

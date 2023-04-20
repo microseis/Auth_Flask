@@ -16,8 +16,8 @@ class User(db.Model):
         unique=True,
         nullable=False,
     )
-    login = db.Column(db.String, unique=True, nullable=False)
-    password = db.Column(db.String, nullable=False)
+    login = db.Column(db.String(30), unique=True, nullable=False)
+    password = db.Column(db.String(30), nullable=False)
     roles = db.relationship("Role", secondary="user_roles")
     history = db.relationship("UserHistory", passive_deletes=True)
 
@@ -43,7 +43,9 @@ class UserRoles(db.Model):
 class UserHistory(db.Model):
     __tablename__ = "user_history"
     id = db.Column(db.Integer(), primary_key=True)
-    user_id = db.Column(db.UUID(), db.ForeignKey("users.id", ondelete="CASCADE"))
+    user_id = db.Column(
+        db.UUID(), db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
     date_logged_in = db.Column(db.DateTime, default=datetime.utcnow)
     ip_address = db.Column(db.String(50), nullable=True)
     user_agent = db.Column(db.String(150), nullable=True)

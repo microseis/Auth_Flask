@@ -9,3 +9,5 @@ repos:
         args: ["--config=setup.cfg"]
         language: python
         types: [python]
+
+exclude: 'migrations/.*|postgres/.*|venv/.*'

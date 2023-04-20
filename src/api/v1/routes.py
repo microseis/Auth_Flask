@@ -1,4 +1,5 @@
 import uuid
+from http import HTTPStatus
 
 from flask import Blueprint, abort, jsonify, make_response, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
@@ -30,9 +31,9 @@ def register_user():
         result = user_service.register_user(user_data)
         return jsonify(result)
     except UserExistsError:
-        raise abort(409)
+        raise abort(HTTPStatus.CONFLICT)
     except BadLoginError:
-        raise abort(400)
+        raise abort(HTTPStatus.BAD_REQUEST)
 
 
 @auth_app.route("/login", methods=["POST"])
@@ -53,27 +54,28 @@ def login():
                     access_token=access_token, refresh_token=refresh_token
                 ).dict()
             ),
-            200,
+            HTTPStatus.OK,
         )
     except BadLoginError:
-        abort(401)
+        abort(HTTPStatus.UNAUTHORIZED)
 
     except WrongPasswordError:
-        abort(403)
+        abort(HTTPStatus.FORBIDDEN)
 
 
 @auth_app.route("/user_history", methods=["GET"])
+@api.validate(tags=["Auth"])
 @jwt_required()
 def get_user_history():
     """Получение истории входов в аккаунт"""
+    page = request.args.get("page", 1, type=int)
+    per_page = request.args.get("per-page", 2, type=int)
+
     identity: uuid = get_jwt_identity()
-    history = user_service.get_user_history(identity)
+    history = user_service.get_user_history(identity, page, per_page)
     if not history:
-        raise abort(400)
-    if len(history) > 1:
-        return jsonify([h for h in history])
-    else:
-        return jsonify(history)
+        raise abort(HTTPStatus.BAD_REQUEST)
+    return jsonify(history)
 
 
 @auth_app.route("/user_logout", methods=["POST"])
@@ -83,7 +85,7 @@ def user_logout():
     """Выход пользователя из аккаунта"""
     old_token = user_service.user_logout()
     if not old_token:
-        raise abort(409)
+        raise abort(HTTPStatus.CONFLICT)
     return {"message": "User has logged out"}
 
 
@@ -97,11 +99,11 @@ def change_password():
         result = user_service.password_change(
             user_id=get_jwt_identity(), password_data=password_data
         )
-        return make_response(jsonify(result), 200)
+        return make_response(jsonify(result), HTTPStatus.OK)
     except BadLoginError:
-        abort(400)
+        abort(HTTPStatus.BAD_REQUEST)
     except WrongPasswordError:
-        abort(403)
+        abort(HTTPStatus.FORBIDDEN)
 
 
 @auth_app.route("/refresh", methods=["POST"])
@@ -117,7 +119,7 @@ def refresh():
     # refresh tokens to access this route.
     identity = get_jwt_identity()
     access_token, refresh_token = user_service.get_tokens(identity)
-    return make_response(jsonify(access_token=access_token), 200)
+    return make_response(jsonify(access_token=access_token), HTTPStatus.OK)
 
 
 @auth_app.route("/roles", methods=["GET"])
@@ -129,10 +131,10 @@ def get_all_roles():
     try:
         output = role_service.get_all_roles()
         if not output:
-            raise abort(400)
+            raise abort(HTTPStatus.BAD_REQUEST)
         return output
     except PermissionError:
-        raise abort(403)
+        raise abort(HTTPStatus.FORBIDDEN)
 
 
 @auth_app.route("/roles/<id>", methods=["GET"])
@@ -143,7 +145,7 @@ def get_role_by_id(id: uuid):
     """Получение роли по заданному id"""
     role = role_service.get_role_by_id(id)
     if not role:
-        raise abort(400)
+        raise abort(HTTPStatus.BAD_REQUEST)
     return role
 
 
@@ -158,7 +160,7 @@ def update_role_by_id(id: uuid):
     role_data = RolesData(**request.json)
     role = role_service.update_role_by_id(id, role_data)
     if not role:
-        raise abort(400)
+        raise abort(HTTPStatus.BAD_REQUEST)
     return role
 
 
@@ -171,7 +173,7 @@ def add_role() -> dict:
     role_data = RolesData(**request.json)
     result = role_service.add_role(role_data)
     if not result:
-        raise abort(400)
+        raise abort(HTTPStatus.BAD_REQUEST)
     return result
 
 
@@ -183,7 +185,7 @@ def delete_role(id: uuid) -> dict:
     """Удаление роли по заданному id"""
     result = role_service.delete_role_by_id(id)
     if not result:
-        raise abort(400)
+        raise abort(HTTPStatus.BAD_REQUEST)
     return result
 
 
@@ -195,7 +197,7 @@ def delete_user_role_by_id(id: uuid):
     """Удаление роли пользователя по id"""
     result = role_service.delete_user_role_by_id(id)
     if not result:
-        raise abort(400)
+        raise abort(HTTPStatus.BAD_REQUEST)
     return result
 
 
@@ -208,7 +210,7 @@ def update_user_role_by_id(user_id: uuid):
     role_data = UserRoleData(**request.json)
     result = role_service.update_user_role_by_id(user_id, role_data)
     if not result:
-        raise abort(400)
+        raise abort(HTTPStatus.BAD_REQUEST)
     return result
 
 
@@ -218,13 +220,13 @@ def handle_400_error(_error) -> Response:
     return make_response(jsonify({"error": "Bad request"}), 400)
 
 
-@auth_app.errorhandler(401)
+@auth_app.errorhandler(HTTPStatus.UNAUTHORIZED)
 def handle_401_error(_error) -> Response:
     """Return a http 401 error to client"""
     return make_response(jsonify({"error": "Unauthorised"}), 401)
 
 
-@auth_app.errorhandler(403)
+@auth_app.errorhandler(HTTPStatus.FORBIDDEN)
 def handle_403_error(_error) -> Response:
     """Return a http 403 error to client"""
     return make_response(jsonify({"error": "Forbidden"}), 403)
@@ -236,7 +238,7 @@ def handle_404_error(_error) -> Response:
     return make_response(jsonify({"error": "Not found"}), 404)
 
 
-@auth_app.errorhandler(409)
+@auth_app.errorhandler(HTTPStatus.CONFLICT)
 def handle_409_error(_error) -> Response:
     """Return a http 409 error to client"""
     return make_response(jsonify({"error": "User already exists"}), 409)

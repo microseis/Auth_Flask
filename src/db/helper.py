@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from flask import Flask
+from flask_migrate import Migrate
 from pydantic import BaseModel, Field
 
 from core.checker import bcrypt
@@ -12,7 +13,7 @@ from db.models import Role, User, UserRoles
 def create_tables(app: Flask) -> None:
     """Подготавливаем контекст и создаём таблицы."""
     app.app_context().push()
-    db.create_all()
+    Migrate(app, db)
 
 
 def create_admin(admin_password: str) -> None:
