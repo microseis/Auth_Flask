@@ -24,7 +24,7 @@ April 7, 2023:
 - Add User Registration
 - Add User Roles
 - Add Open API Spec
-  - Add `docker-compose.yml` for easy deployment on a server
+- Add `docker-compose.yml` for easy deployment on a server
 
 April 18, 2023:
 - Refactor API Spec
