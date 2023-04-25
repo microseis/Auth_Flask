@@ -1,6 +1,5 @@
 
 # Flask User Authentication App
-Repository url:  https://github.com/microseis/Auth_sprint_1 
 
 ## Run
 Run the app for development:
